@@ -4,13 +4,14 @@ A command-line tool that transforms Jira ticket links into comprehensive escalat
 
 ## ✨ Features
 
-- 🎯 **Complete Context Analysis** - Issue overview, timeline, comments, links
-- 📊 **Pattern Recognition** - Similar issues, recurring problems, trend analysis  
-- ⚡ **30-Second Analysis** - Comprehensive insights in seconds, not 30+ minutes
-- 🔗 **Smart Linking** - Related issues, dependencies, project activity
-- 💼 **Business Impact** - Revenue calculations, user impact, severity assessment
-- 🛠️ **Technical Guidance** - Investigation areas, escalation paths, action items
-- 👥 **Team Ready** - Easy setup for entire organization
+- **AI-Optimized Context** - Enhanced field extraction for comprehensive analysis
+- **Complete Context Analysis** - Issue overview, timeline, comments, links, worklog
+- **Pattern Recognition** - Multi-dimensional similarity search, trend analysis  
+- **30-Second Analysis** - Comprehensive insights in seconds, not 30+ minutes
+- **Smart Linking** - Related issues, dependencies, project activity
+- **Business Impact Assessment** - Automated priority/production impact detection
+- **Resource Analysis** - Assignee workload, time tracking, effort insights
+- **Context Quality Score** - AI completeness rating (0-100) for optimal analysis
 
 ## 🚀 Quick Install
 
@@ -27,13 +28,13 @@ chmod +x install.sh
 ./install.sh
 ```
 
-## 📋 Prerequisites
+## Prerequisites
 
 - `curl` (pre-installed on most systems)
 - `jq` (JSON processor) - installer will guide you if missing
 - Valid Jira Cloud access and API token
 
-## ⚙️ Setup (2 minutes)
+## Setup (2 minutes)
 
 ### 1. Run Installation
 ```bash
@@ -55,7 +56,7 @@ You'll need:
 jesc "PROJ-123"
 ```
 
-## 💡 Usage Examples
+## Usage Examples
 
 ### Analyze Any Ticket
 ```bash
@@ -138,7 +139,7 @@ jesc "PROD-890"
 ✅ Analysis complete. Share this output with your team!
 ```
 
-## 🎛️ Command Reference
+## Command Reference
 
 ```bash
 # Basic analysis
@@ -152,7 +153,7 @@ jesc --help           # Show help
 jesc --version        # Show version
 ```
 
-## 📁 What Gets Generated
+## What Gets Generated
 
 Each analysis creates:
 - **Human-readable summary** (displayed in terminal)
@@ -161,7 +162,7 @@ Each analysis creates:
 - **similar_issues.json** - Related issues
 - **Analysis directory** - Saved for historical reference
 
-## 🏢 Organizational Features
+## Organizational Features
 
 ### Team Distribution
 - **One-line installer** - Share with entire team
@@ -190,7 +191,7 @@ Edit `~/.config/jira-escalation-analyzer/org-config.yaml` for:
 - **HTTPS only** - Secure communication
 - **Individual setup** - Each user manages own access
 
-## 🆘 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 

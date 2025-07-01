@@ -260,7 +260,7 @@ run_analysis() {
     # Primary Issue Data
     echo "📋 Getting issue details..."
     if ! curl -s -u "$AUTH" \
-      "$BASE_URL/issue/$TICKET_KEY?expand=names,renderedFields,comments,attachments,changelog,transitions,issuelinks,subtasks" \
+      "$BASE_URL/issue/$TICKET_KEY?expand=names,renderedFields,comments,attachments,changelog,transitions,issuelinks,subtasks,worklog,versions,operations" \
       -o issue_data.json; then
         echo -e "${RED}❌ Failed to fetch issue data. Check your configuration.${NC}"
         exit 1
@@ -273,20 +273,45 @@ run_analysis() {
         exit 1
     fi
     
-    # Recent Project Activity
+    # Recent Project Activity & Project Metadata
     echo "📊 Getting recent project activity..."
     curl -s -u "$AUTH" \
       "$BASE_URL/search?jql=project=$PROJECT_KEY AND updated>=-7d ORDER BY updated DESC&maxResults=15" \
       -o recent_activity.json
     
-    # Similar Issues Search
+    echo "📁 Getting project metadata..."
+    curl -s -u "$AUTH" \
+      "$BASE_URL/project/$PROJECT_KEY" \
+      -o project_metadata.json
+    
+    # Enhanced Similar Issues Search
     SUMMARY=$(jq -r '.fields.summary' issue_data.json 2>/dev/null)
     KEYWORDS=$(echo "$SUMMARY" | grep -oE '\b[A-Za-z]{4,}\b' | head -3 | tr '\n' ' ')
+    COMPONENTS=$(jq -r '.fields.components[]?.name // empty' issue_data.json 2>/dev/null | head -2 | tr '\n' ',' | sed 's/,$//')
+    LABELS=$(jq -r '.fields.labels[]? // empty' issue_data.json 2>/dev/null | head -2 | tr '\n' ',' | sed 's/,$//')
+    ASSIGNEE=$(jq -r '.fields.assignee?.name // empty' issue_data.json 2>/dev/null)
     
     echo "🔍 Searching similar issues with keywords: $KEYWORDS"
+    
+    # Multi-dimensional similarity search
+    SIMILARITY_JQL="project=$PROJECT_KEY AND ("
+    [[ -n "$KEYWORDS" ]] && SIMILARITY_JQL+="text~\"$KEYWORDS\" OR "
+    [[ -n "$COMPONENTS" ]] && SIMILARITY_JQL+="component in ($COMPONENTS) OR "
+    [[ -n "$LABELS" ]] && SIMILARITY_JQL+="labels in ($LABELS) OR "
+    [[ -n "$ASSIGNEE" ]] && SIMILARITY_JQL+="assignee=\"$ASSIGNEE\" OR "
+    SIMILARITY_JQL="${SIMILARITY_JQL% OR *}) AND key!=$TICKET_KEY ORDER BY updated DESC"
+    
     curl -s -u "$AUTH" \
-      "$BASE_URL/search?jql=project=$PROJECT_KEY AND text~\"$KEYWORDS\" AND key!=$TICKET_KEY ORDER BY updated DESC&maxResults=8" \
+      "$BASE_URL/search?jql=$SIMILARITY_JQL&maxResults=12" \
       -o similar_issues.json
+    
+    # Assignee workload context
+    if [[ -n "$ASSIGNEE" ]]; then
+        echo "👤 Getting assignee workload..."
+        curl -s -u "$AUTH" \
+          "$BASE_URL/search?jql=assignee=\"$ASSIGNEE\" AND resolution=Unresolved ORDER BY priority DESC&maxResults=8" \
+          -o assignee_workload.json
+    fi
     
     echo ""
     echo -e "${GREEN}🧠 CONTEXT ANALYSIS COMPLETE${NC}"
@@ -304,30 +329,59 @@ run_analysis() {
 }
 
 display_analysis() {
-    # Issue Overview
+    # Enhanced Issue Overview
     echo ""
     jq -r '
     "📋 ISSUE OVERVIEW:",
     "  Key: " + .key,
     "  Summary: " + .fields.summary,
-    "  Status: " + .fields.status.name,
+    "  Status: " + .fields.status.name + " (" + (.fields.status.statusCategory.name // "Unknown") + ")",
     "  Priority: " + .fields.priority.name,
     "  Type: " + .fields.issuetype.name,
     "  Assignee: " + (.fields.assignee.displayName // "Unassigned"),
     "  Reporter: " + .fields.reporter.displayName,
     "  Created: " + (.fields.created | split("T")[0]),
     "  Updated: " + (.fields.updated | split("T")[0]),
+    "  Resolution: " + (.fields.resolution.name // "Unresolved"),
+    if .fields.environment then "  Environment: " + (.fields.environment | tostring | .[0:100]) else empty end,
     ""
     ' issue_data.json
     
-    # Categorization
+    # Time Tracking & Effort Analysis
+    jq -r '
+    if (.fields.timeoriginalestimate or .fields.timeestimate or .fields.timespent or .fields.aggregatetimespent) then
+    "⏱️  TIME TRACKING:",
+    (if .fields.timeoriginalestimate then "  Original Estimate: " + (.fields.timeoriginalestimate / 3600 | floor | tostring) + "h" else empty end),
+    (if .fields.timeestimate then "  Remaining: " + (.fields.timeestimate / 3600 | floor | tostring) + "h" else empty end),
+    (if .fields.timespent then "  Time Spent: " + (.fields.timespent / 3600 | floor | tostring) + "h" else empty end),
+    (if .fields.aggregatetimespent then "  Total Spent (inc. subtasks): " + (.fields.aggregatetimespent / 3600 | floor | tostring) + "h" else empty end),
+    ""
+    else empty end
+    ' issue_data.json
+    
+    # Enhanced Categorization
     jq -r '
     "🏷️  CATEGORIZATION:",
     "  Components: " + (if .fields.components | length > 0 then (.fields.components | map(.name) | join(", ")) else "None" end),
     "  Labels: " + (if .fields.labels | length > 0 then (.fields.labels | join(", ")) else "None" end),
     "  Fix Version: " + (if .fields.fixVersions | length > 0 then (.fields.fixVersions | map(.name) | join(", ")) else "None" end),
+    "  Affected Versions: " + (if .fields.versions | length > 0 then (.fields.versions | map(.name) | join(", ")) else "None" end),
+    "  Security Level: " + (.fields.security.name // "None"),
     ""
     ' issue_data.json
+    
+    # Project Context
+    if [[ -f "project_metadata.json" ]]; then
+        echo "📁 PROJECT CONTEXT:"
+        jq -r '
+        "  Project: " + .name + " (" + .key + ")",
+        "  Lead: " + (.lead.displayName // "Unknown"),
+        "  Type: " + (.projectTypeKey // "Unknown"),
+        "  Category: " + (.projectCategory.name // "Uncategorized"),
+        ""
+        ' project_metadata.json 2>/dev/null || echo "  Project metadata unavailable"
+        echo ""
+    fi
     
     # Recent Activity Timeline
     echo "⏰ RECENT ACTIVITY TIMELINE:"
@@ -369,19 +423,50 @@ display_analysis() {
     ' issue_data.json
     echo ""
     
-    # Similar Issues
-    echo "🔄 SIMILAR ISSUES:"
+    # Enhanced Similar Issues Analysis
+    echo "🔄 SIMILAR ISSUES ANALYSIS:"
     SIMILAR_COUNT=$(jq '.issues | length' similar_issues.json 2>/dev/null || echo "0")
     if [[ "$SIMILAR_COUNT" -gt 0 ]]; then
-        jq -r '.issues[] | "  " + .key + " [" + .fields.status.name + "] " + .fields.summary' similar_issues.json
+        echo "  Found $SIMILAR_COUNT related issues:"
+        jq -r '.issues[] | 
+        "  " + .key + " [" + .fields.status.name + "] " + .fields.summary + 
+        (if .fields.resolution then " (Resolved: " + .fields.resolution.name + ")" else "" end)' similar_issues.json
+        echo ""
+        
+        # Pattern Analysis
+        echo "🔍 PATTERN INSIGHTS:"
+        RESOLVED_COUNT=$(jq '[.issues[] | select(.fields.resolution != null)] | length' similar_issues.json 2>/dev/null || echo "0")
+        OPEN_COUNT=$((SIMILAR_COUNT - RESOLVED_COUNT))
+        echo "  Resolution Rate: $RESOLVED_COUNT/$SIMILAR_COUNT resolved ($((RESOLVED_COUNT * 100 / SIMILAR_COUNT))%)"
+        echo "  Active Similar Issues: $OPEN_COUNT"
+        
+        # Most common components in similar issues
+        COMMON_COMPONENTS=$(jq -r '[.issues[].fields.components[]?.name] | group_by(.) | map({component: .[0], count: length}) | sort_by(.count) | reverse | .[0:3][] | "    " + .component + " (" + (.count | tostring) + "x)"' similar_issues.json 2>/dev/null)
+        if [[ -n "$COMMON_COMPONENTS" ]]; then
+            echo "  Common Components:"
+            echo "$COMMON_COMPONENTS"
+        fi
     else
         echo "  No similar issues found"
     fi
     echo ""
     
-    # Executive Summary
-    echo -e "${YELLOW}🎯 TICKET SUMMARY:${NC}"
-    echo "=============================="
+    # Assignee Workload Context
+    if [[ -f "assignee_workload.json" ]]; then
+        WORKLOAD_COUNT=$(jq '.issues | length' assignee_workload.json 2>/dev/null || echo "0")
+        if [[ "$WORKLOAD_COUNT" -gt 0 ]]; then
+            echo "👤 ASSIGNEE WORKLOAD:"
+            ASSIGNEE_NAME=$(jq -r '.issues[0].fields.assignee.displayName' assignee_workload.json 2>/dev/null)
+            echo "  $ASSIGNEE_NAME has $WORKLOAD_COUNT unresolved issues:"
+            jq -r '.issues[0:5][] | "    " + .key + " [" + .fields.priority.name + "] " + (.fields.summary | .[0:60])' assignee_workload.json 2>/dev/null
+            [[ "$WORKLOAD_COUNT" -gt 5 ]] && echo "    ... and $((WORKLOAD_COUNT - 5)) more issues"
+            echo ""
+        fi
+    fi
+    
+    # Comprehensive Executive Summary
+    echo -e "${YELLOW}🎯 ESCALATION CONTEXT SUMMARY:${NC}"
+    echo "============================================="
     
     STATUS=$(jq -r '.fields.status.name' issue_data.json)
     PRIORITY=$(jq -r '.fields.priority.name' issue_data.json)
@@ -389,12 +474,52 @@ display_analysis() {
     ASSIGNEE=$(jq -r '.fields.assignee.displayName // "Unassigned"' issue_data.json)
     COMMENT_COUNT=$(jq '.fields.comment.comments | length' issue_data.json)
     LINKED_COUNT=$(jq '.fields.issuelinks | length' issue_data.json)
+    WORKLOG_COUNT=$(jq '.fields.worklog.total // 0' issue_data.json)
+    TIME_SPENT=$(jq -r 'if .fields.timespent then (.fields.timespent / 3600 | floor | tostring) + "h" else "Not tracked" end' issue_data.json)
     
+    echo "📊 CURRENT STATE:"
     echo "• Status: $STATUS | Priority: $PRIORITY | Type: $ISSUE_TYPE"
     echo "• Assigned to: $ASSIGNEE"
+    echo "• Effort: $TIME_SPENT invested ($WORKLOG_COUNT work log entries)"
     echo "• Activity: $COMMENT_COUNT comments, $LINKED_COUNT linked issues"
-    echo "• Similar issues found: $SIMILAR_COUNT"
-    echo "• Analysis timestamp: $(date)"
+    echo "• Similar issues: $SIMILAR_COUNT found, $RESOLVED_COUNT resolved"
+    
+    # Business Impact Assessment
+    echo ""
+    echo "💼 BUSINESS IMPACT ASSESSMENT:"
+    if jq -e '.fields.priority.name == "Critical" or .fields.priority.name == "High"' issue_data.json > /dev/null; then
+        echo "• ⚠️  HIGH PRIORITY - Requires immediate attention"
+    fi
+    
+    if jq -e '.fields.labels[]? | test("production|prod|outage|revenue")' issue_data.json > /dev/null; then
+        echo "• 🚨 PRODUCTION IMPACT - Customer-facing issue detected"
+    fi
+    
+    if [[ "$OPEN_COUNT" -gt 2 ]]; then
+        echo "• 🔄 PATTERN CONCERN - $OPEN_COUNT similar unresolved issues (potential systemic problem)"
+    fi
+    
+    if [[ "$WORKLOAD_COUNT" -gt 8 ]]; then
+        echo "• 👤 RESOURCE CONCERN - Assignee has $WORKLOAD_COUNT unresolved issues"
+    fi
+    
+    # AI Context Optimization Score
+    CONTEXT_SCORE=0
+    [[ "$COMMENT_COUNT" -gt 0 ]] && ((CONTEXT_SCORE += 15))
+    [[ "$LINKED_COUNT" -gt 0 ]] && ((CONTEXT_SCORE += 15))
+    [[ "$SIMILAR_COUNT" -gt 0 ]] && ((CONTEXT_SCORE += 20))
+    [[ "$WORKLOG_COUNT" -gt 0 ]] && ((CONTEXT_SCORE += 20))
+    [[ -f "project_metadata.json" ]] && ((CONTEXT_SCORE += 15))
+    [[ -f "assignee_workload.json" ]] && ((CONTEXT_SCORE += 15))
+    
+    echo ""
+    echo "🤖 AI CONTEXT COMPLETENESS: $CONTEXT_SCORE/100"
+    [[ "$CONTEXT_SCORE" -ge 80 ]] && echo "✅ Excellent context for AI analysis"
+    [[ "$CONTEXT_SCORE" -ge 60 && "$CONTEXT_SCORE" -lt 80 ]] && echo "⚠️  Good context, some details missing"
+    [[ "$CONTEXT_SCORE" -lt 60 ]] && echo "❌ Limited context available"
+    
+    echo ""
+    echo "📅 Analysis generated: $(date)"
 }
 
 # Main command processing
