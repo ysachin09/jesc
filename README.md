@@ -1,3 +1,5 @@
+# JESC - Jira Escalation Context
+
 A command-line tool that transforms Jira ticket links into comprehensive escalation context with business impact assessment, historical pattern analysis, and actionable recommendations.
 
 ## ✨ Features
@@ -35,7 +37,7 @@ chmod +x install.sh
 
 ### 1. Run Installation
 ```bash
-./install.sh
+curl -sSL https://raw.githubusercontent.com/ysachin09/jesc/main/scripts/install.sh | bash
 ```
 
 ### 2. Initial Configuration  
@@ -146,7 +148,7 @@ jesc "https://company.atlassian.net/browse/TICKET-123"
 # Configuration
 jesc --setup          # Initial setup
 jesc --config         # Update configuration
-  jesc --help           # Show help
+jesc --help           # Show help
 jesc --version        # Show version
 ```
 
@@ -182,11 +184,11 @@ Edit `~/.config/jira-escalation-analyzer/org-config.yaml` for:
 
 ## 🔒 Security
 
-- ✅ **API tokens only** - No password storage
-- ✅ **Local processing** - Data stays on your machine  
-- ✅ **Encrypted config** - Credentials protected
-- ✅ **HTTPS only** - Secure communication
-- ✅ **Individual setup** - Each user manages own access
+- **API tokens only** - No password storage
+- **Local processing** - Data stays on your machine  
+- **Encrypted config** - Credentials protected
+- **HTTPS only** - Secure communication
+- **Individual setup** - Each user manages own access
 
 ## 🆘 Troubleshooting
 
