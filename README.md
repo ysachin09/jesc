@@ -1,7 +1,3 @@
-# 🚨 Jira Escalation Analyzer
-
-> **Professional escalation context analysis in seconds, not minutes**
-
 A command-line tool that transforms Jira ticket links into comprehensive escalation context with business impact assessment, historical pattern analysis, and actionable recommendations.
 
 ## ✨ Features
@@ -19,12 +15,12 @@ A command-line tool that transforms Jira ticket links into comprehensive escalat
 **One-line installation for your entire team:**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/your-org/jira-escalation-analyzer/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/ysachin09/jesc/main/scripts/install.sh | bash
 ```
 
 Or download and run:
 ```bash
-wget https://raw.githubusercontent.com/your-org/jira-escalation-analyzer/main/install.sh
+wget https://raw.githubusercontent.com/ysachin09/jesc/main/scripts/install.sh
 chmod +x install.sh
 ./install.sh
 ```
@@ -288,5 +284,5 @@ Track your team's efficiency improvements:
 Install now and turn 30-minute investigations into 30-second analyses!
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/your-org/jira-escalation-analyzer/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/ysachin09/jesc/main/scripts/install.sh | bash
 ``` 
