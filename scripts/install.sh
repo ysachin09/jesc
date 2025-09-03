@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Jira Ticket Analyzer - Streamlined Installation
-# Creates the 'jesc' command for fast ticket analysis
+# Jira Ticket Context - Streamlined Installation
+# Creates the 'jesc' command for fast ticket context extraction
 
 set -e
 
-TOOL_NAME="jira-ticket-analyzer"
+TOOL_NAME="jira-ticket-context"
 INSTALL_DIR="$HOME/.local/bin"
 CONFIG_DIR="$HOME/.config/$TOOL_NAME"
 TOOL_VERSION="1.1.0"
 
-echo "🚀 Installing Jira Ticket Analyzer v$TOOL_VERSION"
+echo "🚀 Installing Jira Ticket Context v$TOOL_VERSION"
 echo "📱 Command: jesc (short & sweet!)"
 echo "=============================================="
 
@@ -51,10 +51,10 @@ echo "📥 Installing main tool..."
 cat > "$INSTALL_DIR/jesc" << 'TOOL_EOF'
 #!/bin/bash
 
-# Jira Ticket Analyzer - Fast Context Tool
+# Jira Ticket Context - Fast Context Tool
 # Usage: jesc <jira-url> [options]
 
-TOOL_DIR="$HOME/.config/jira-ticket-analyzer"
+TOOL_DIR="$HOME/.config/jira-ticket-context"
 CONFIG_FILE="$TOOL_DIR/config"
 VERSION="1.1.0"
 
@@ -69,13 +69,13 @@ NC='\033[0m' # No Color
 
 show_help() {
     cat << EOF
-🎯 Jira Ticket Analyzer v$VERSION
+🎯 Jira Ticket Context v$VERSION
 
 USAGE:
-  jesc <jira-url>                    # Analyze ticket (30-second context)
+  jesc <jira-url>                    # Extract ticket context (30-second)
   jesc --setup                       # Initial configuration
   jesc --config                      # Update configuration
-  jesc --cleanup                     # Remove analysis data  
+  jesc --cleanup                     # Remove context data  
   jesc --help                        # Show this help
   jesc --version                     # Show version
 
@@ -85,45 +85,45 @@ EXAMPLES:
   jesc --setup                       # First-time setup
 
 FEATURES:
-  ⚡ 30-second ticket analysis (vs 30-minute manual)
-  📊 Complete context: comments, links, history, similar issues
-  🎯 Actionable technical recommendations
+  ⚡ 30-second context extraction (vs 30-minute manual research)
+  📊 Complete context: comments, links, history, similar tickets
+  🤖 Perfect for AI tools (Cursor, ChatGPT, Claude)
   💾 Memory optimized (no directory accumulation)
   🔄 Always fresh data from Jira API
 
-Transform your ticket analysis time!
+Get rich ticket context for any workflow!
 EOF
 }
 
 show_version() {
-    echo "Jira Ticket Analyzer v$VERSION"
+    echo "Jira Ticket Context v$VERSION"
 }
 
 cleanup_data() {
-    echo -e "${BLUE}🧹 Cleaning up analysis data...${NC}"
+    echo -e "${BLUE}🧹 Cleaning up context data...${NC}"
     
-    ANALYSIS_DIRS=$(find "$TOOL_DIR" -name "current_analysis_*" -type d 2>/dev/null || true)
-    OLD_DIRS=$(find "$TOOL_DIR" -name "analysis_*" -type d 2>/dev/null || true)
+    CONTEXT_DIRS=$(find "$TOOL_DIR" -name "current_context_*" -type d 2>/dev/null || true)
+    OLD_DIRS=$(find "$TOOL_DIR" -name "context_*" -type d 2>/dev/null || true)
     
-    TOTAL_DIRS=$(echo "$ANALYSIS_DIRS $OLD_DIRS" | wc -w | tr -d ' ')
+    TOTAL_DIRS=$(echo "$CONTEXT_DIRS $OLD_DIRS" | wc -w | tr -d ' ')
     
     if [[ "$TOTAL_DIRS" -eq 0 ]]; then
-        echo "✅ No analysis data found to clean up"
+        echo "✅ No context data found to clean up"
         return
     fi
     
-    echo "Found $TOTAL_DIRS analysis directories:"
-    echo "$ANALYSIS_DIRS $OLD_DIRS" | tr ' ' '\n' | grep -v '^$' | while read -r dir; do
+    echo "Found $TOTAL_DIRS context directories:"
+    echo "$CONTEXT_DIRS $OLD_DIRS" | tr ' ' '\n' | grep -v '^$' | while read -r dir; do
         echo "  $dir"
     done
     
     echo ""
-    echo -n "Remove all analysis data? (y/N): "
+    echo -n "Remove all context data? (y/N): "
     read -r response
     
     if [[ "$response" =~ ^[Yy]$ ]]; then
-        rm -rf $ANALYSIS_DIRS $OLD_DIRS 2>/dev/null || true
-        echo "✅ All analysis data removed"
+        rm -rf $CONTEXT_DIRS $OLD_DIRS 2>/dev/null || true
+        echo "✅ All context data removed"
         echo -e "${GREEN}💾 Disk space freed up!${NC}"
     else
         echo "⏭️  Cleanup cancelled"
@@ -131,7 +131,7 @@ cleanup_data() {
 }
 
 setup_config() {
-    echo -e "${BLUE}🛠️  Jira Ticket Analyzer Setup${NC}"
+    echo -e "${BLUE}🛠️  Jira Ticket Context Setup${NC}"
     echo "=================================="
     
     # Create config directory
@@ -163,7 +163,7 @@ setup_config() {
     echo -e "${YELLOW}📝 API Token Setup:${NC}"
     echo "1. Go to: https://id.atlassian.com/manage-profile/security/api-tokens"
     echo "2. Click 'Create API token'"
-    echo "3. Label it 'Ticket Analyzer'"
+    echo "3. Label it 'Ticket Context'"
     echo "4. Copy the token and paste below"
     echo ""
     echo -n "API Token: "
@@ -176,7 +176,7 @@ setup_config() {
     
     # Save configuration
     cat > "$CONFIG_FILE" << EOF
-# Jira Ticket Analyzer Configuration
+# Jira Ticket Context Configuration
 JIRA_DOMAIN=$DOMAIN
 JIRA_EMAIL=$EMAIL
 JIRA_TOKEN=$TOKEN
@@ -232,25 +232,25 @@ extract_ticket_info() {
     PROJECT_KEY=$(echo "$TICKET_KEY" | cut -d'-' -f1)
 }
 
-run_analysis() {
+extract_context() {
     local jira_input="$1"
     
     extract_ticket_info "$jira_input"
     load_config
     
-    echo -e "${PURPLE}🚨 TICKET CONTEXT ANALYSIS${NC}"
+    echo -e "${PURPLE}📊 TICKET CONTEXT EXTRACTION${NC}"
     echo "=================================="
-    echo -e "${CYAN}🔗 Analyzing:${NC} $jira_input"
+    echo -e "${CYAN}🔗 Extracting context for:${NC} $jira_input"
     echo -e "${CYAN}🎫 Ticket:${NC} $TICKET_KEY"
     echo -e "${CYAN}📁 Project:${NC} $PROJECT_KEY"
     echo -e "${CYAN}🌐 Domain:${NC} $JIRA_DOMAIN"
     echo ""
     
-    # Create analysis directory (reuse same name to avoid accumulation)
-    ANALYSIS_DIR="$TOOL_DIR/current_analysis_$TICKET_KEY"
-    rm -rf "$ANALYSIS_DIR" 2>/dev/null  # Remove previous analysis for this ticket
-    mkdir -p "$ANALYSIS_DIR"
-    cd "$ANALYSIS_DIR"
+    # Create context directory (reuse same name to avoid accumulation)
+    CONTEXT_DIR="$TOOL_DIR/current_context_$TICKET_KEY"
+    rm -rf "$CONTEXT_DIR" 2>/dev/null  # Remove previous context for this ticket
+    mkdir -p "$CONTEXT_DIR"
+    cd "$CONTEXT_DIR"
     
     AUTH="$JIRA_EMAIL:$JIRA_TOKEN"
     BASE_URL="https://$JIRA_DOMAIN/rest/api/3"
@@ -314,21 +314,21 @@ run_analysis() {
     fi
     
     echo ""
-    echo -e "${GREEN}🧠 CONTEXT ANALYSIS COMPLETE${NC}"
+    echo -e "${GREEN}🧠 CONTEXT EXTRACTION COMPLETE${NC}"
     echo "==============================="
     
-    # Run the analysis display
-    display_analysis
+    # Run the context display
+    display_context
     
     echo ""
-    echo -e "${BLUE}📁 Analysis files saved in:${NC}"
-    echo "  $ANALYSIS_DIR"
+    echo -e "${BLUE}📁 Context files saved in:${NC}"
+    echo "  $CONTEXT_DIR"
     echo ""
-    echo -e "${GREEN}✅ Analysis complete. Share this output with your team!${NC}"
-    echo -e "${CYAN}💡 Note: Previous analysis for this ticket was replaced to save disk space${NC}"
+    echo -e "${GREEN}✅ Context ready! Perfect for AI tools or team collaboration!${NC}"
+    echo -e "${CYAN}💡 Note: Previous context for this ticket was replaced to save disk space${NC}"
 }
 
-display_analysis() {
+display_context() {
     # Enhanced Issue Overview
     echo ""
     jq -r '
@@ -347,7 +347,7 @@ display_analysis() {
     ""
     ' issue_data.json
     
-    # Time Tracking & Effort Analysis
+    # Time Tracking & Effort Details
     jq -r '
     if (.fields.timeoriginalestimate or .fields.timeestimate or .fields.timespent or .fields.aggregatetimespent) then
     "⏱️  TIME TRACKING:",
@@ -423,8 +423,8 @@ display_analysis() {
     ' issue_data.json
     echo ""
     
-    # Enhanced Similar Issues Analysis
-    echo "🔄 SIMILAR ISSUES ANALYSIS:"
+    # Enhanced Similar Tickets Search
+    echo "🔄 SIMILAR TICKETS FOUND:"
     SIMILAR_COUNT=$(jq '.issues | length' similar_issues.json 2>/dev/null || echo "0")
     if [[ "$SIMILAR_COUNT" -gt 0 ]]; then
         echo "  Found $SIMILAR_COUNT related issues:"
@@ -433,7 +433,7 @@ display_analysis() {
         (if .fields.resolution then " (Resolved: " + .fields.resolution.name + ")" else "" end)' similar_issues.json
         echo ""
         
-        # Pattern Analysis
+        # Pattern Details
         echo "🔍 PATTERN INSIGHTS:"
         RESOLVED_COUNT=$(jq '[.issues[] | select(.fields.resolution != null)] | length' similar_issues.json 2>/dev/null || echo "0")
         OPEN_COUNT=$((SIMILAR_COUNT - RESOLVED_COUNT))
@@ -465,7 +465,7 @@ display_analysis() {
     fi
     
     # Comprehensive Executive Summary
-    echo -e "${YELLOW}🎯 ESCALATION CONTEXT SUMMARY:${NC}"
+    echo -e "${YELLOW}🎯 TICKET CONTEXT SUMMARY:${NC}"
     echo "============================================="
     
     STATUS=$(jq -r '.fields.status.name' issue_data.json)
@@ -519,7 +519,7 @@ display_analysis() {
     [[ "$CONTEXT_SCORE" -lt 60 ]] && echo "❌ Limited context available"
     
     echo ""
-    echo "📅 Analysis generated: $(date)"
+    echo "📅 Context extracted: $(date)"
 }
 
 # Main command processing
@@ -546,7 +546,7 @@ case "${1:-}" in
         exit 1
         ;;
     *)
-        run_analysis "$1"
+        extract_context "$1"
         ;;
 esac
 TOOL_EOF
@@ -577,15 +577,15 @@ echo -e "${GREEN}🎉 Installation Complete!${NC}"
 echo "========================"
 echo ""
 echo "✨ WHAT'S NEW:"
-echo "• Short command: jesc (vs jira-analyze)"
-echo "• Memory optimized (no accumulation)"
-echo "• 30-second ticket analysis"
-echo "• Clean, focused distribution"
+echo "• Short command: jesc (get any ticket context)"
+echo "• Works with Stories, Bugs, Tasks, Epics"
+echo "• 30-second context extraction"
+echo "• Perfect for AI tools (Cursor, ChatGPT, etc)"
 echo ""
 echo "Next steps:"
 echo "1. Restart terminal or: source ~/.bashrc"
 echo "2. Setup: jesc --setup"
-echo "3. Test: jesc 'PROJ-123'"
+echo "3. Try: jesc 'STORY-123' or jesc 'BUG-456'"
 echo ""
 echo "Usage examples:"
 echo "• jesc 'https://company.atlassian.net/browse/DEV-1234'"

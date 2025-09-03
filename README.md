@@ -1,17 +1,17 @@
-# JESC - Jira Escalation Context
+# JESC - Jira Ticket Context
 
-A command-line tool that transforms Jira ticket links into comprehensive escalation context with business impact assessment, historical pattern analysis, and actionable recommendations.
+A command-line tool that transforms any Jira ticket (Stories, Bugs, Tasks, Epics) into rich context perfect for AI tools like Cursor, development workflows, and team collaboration.
 
 ## ✨ Features
 
 - **AI-Optimized Context** - Enhanced field extraction for comprehensive analysis
-- **Complete Context Analysis** - Issue overview, timeline, comments, links, worklog
+- **Complete Ticket Context** - Issue overview, timeline, comments, links, worklog
 - **Pattern Recognition** - Multi-dimensional similarity search, trend analysis  
-- **30-Second Analysis** - Comprehensive insights in seconds, not 30+ minutes
+- **30-Second Extraction** - Rich context in seconds, not 30+ minutes of research
 - **Smart Linking** - Related issues, dependencies, project activity
 - **Business Impact Assessment** - Automated priority/production impact detection
 - **Resource Analysis** - Assignee workload, time tracking, effort insights
-- **Context Quality Score** - AI completeness rating (0-100) for optimal analysis
+- **Context Quality Score** - AI readiness rating (0-100) for optimal processing
 
 ## 🚀 Quick Install
 
