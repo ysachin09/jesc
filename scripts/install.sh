@@ -555,21 +555,28 @@ TOOL_EOF
 chmod +x "$INSTALL_DIR/jesc"
 
 # Add to PATH if not already there
-if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
+# Determine shell config file
+if [[ "$SHELL" == *"zsh"* ]]; then
+    SHELL_CONFIG="$HOME/.zshrc"
+else
+    SHELL_CONFIG="$HOME/.bashrc"
+fi
+
+# Check if PATH export exists in shell config (not just current PATH)
+if ! grep -q "\.local/bin" "$SHELL_CONFIG" 2>/dev/null; then
     echo ""
-    echo "📝 Adding to PATH..."
-    
-    # Determine shell config file
-    if [[ "$SHELL" == *"zsh"* ]]; then
-        SHELL_CONFIG="$HOME/.zshrc"
-    else
-        SHELL_CONFIG="$HOME/.bashrc"
-    fi
+    echo "📝 Adding to PATH in $SHELL_CONFIG..."
     
     echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$SHELL_CONFIG"
     export PATH="$HOME/.local/bin:$PATH"
     
     echo "✅ Added $INSTALL_DIR to PATH in $SHELL_CONFIG"
+    echo "🔄 Loading updated PATH in current session..."
+    source "$SHELL_CONFIG" 2>/dev/null || true
+else
+    echo "✅ PATH already configured in $SHELL_CONFIG"
+    # Still export for current session in case it's not in current PATH
+    export PATH="$HOME/.local/bin:$PATH"
 fi
 
 echo ""
@@ -583,7 +590,7 @@ echo "• 30-second context extraction"
 echo "• Perfect for AI tools (Cursor, ChatGPT, etc)"
 echo ""
 echo "Next steps:"
-echo "1. Restart terminal or: source ~/.bashrc"
+echo "1. Restart terminal or: source $SHELL_CONFIG"
 echo "2. Setup: jesc --setup"
 echo "3. Try: jesc 'STORY-123' or jesc 'BUG-456'"
 echo ""
